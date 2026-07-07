@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -14,10 +13,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.phonecontrol.util.ShellExecutor
 import kotlinx.coroutines.launch
 
@@ -78,71 +77,32 @@ fun DashboardScreen(
                 )
             }
 
-            items(getQuickActions()) { action ->
+            items(getQuickActionsList()) { action ->
                 QuickActionCard(
-                    icon = action.icon,
-                    title = action.title,
-                    subtitle = action.subtitle,
-                    color = action.color,
-                    onClick = { onNavigate(action.route) }
+                    icon = action.first,
+                    title = action.second,
+                    subtitle = action.third,
+                    color = action.fourth,
+                    onClick = { onNavigate(action.fifth) }
                 )
             }
         }
     }
 }
 
-data class QuickAction(
-    val icon: ImageVector,
-    val title: String,
-    val subtitle: String,
-    val color: androidx.compose.ui.graphics.Color,
-    val route: String
-)
-
-fun getQuickActions() = listOf(
-    QuickAction(
-        Icons.Default.PhoneAndroid,
-        "System Info",
-        "Device details, battery, uptime",
-        MaterialTheme.colorScheme.primary,
-        "system"
-    ),
-    QuickAction(
-        Icons.Default.Apps,
-        "Apps Manager",
-        "Installed apps, uninstall, info",
-        MaterialTheme.colorScheme.secondary,
-        "apps"
-    ),
-    QuickAction(
-        Icons.Default.Build,
-        "Tools",
-        "Screenshot, input, display",
-        MaterialTheme.colorScheme.tertiary,
-        "tools"
-    ),
-    QuickAction(
-        Icons.Default.Wifi,
-        "Network",
-        "WiFi, Bluetooth, connections",
-        MaterialTheme.colorScheme.error,
-        "network"
-    ),
-    QuickAction(
-        Icons.Default.CleaningServices,
-        "Optimizer",
-        "Clean cache, kill background",
-        Color(0xFF66BB6A),
-        "optimize"
-    ),
-    QuickAction(
-        Icons.Default.Term,
-        "Terminal",
-        "Run shell commands",
-        Color(0xFF78909C),
-        "terminal"
+@Composable
+private fun getQuickActionsList(): List<Quintuple<ImageVector, String, String, Color, String>> {
+    return listOf(
+        Quintuple(Icons.Default.PhoneAndroid, "System Info", "Device details, battery, uptime", MaterialTheme.colorScheme.primary, "system"),
+        Quintuple(Icons.Default.Apps, "Apps Manager", "Installed apps, uninstall, info", MaterialTheme.colorScheme.secondary, "apps"),
+        Quintuple(Icons.Default.Build, "Tools", "Screenshot, input, display", MaterialTheme.colorScheme.tertiary, "tools"),
+        Quintuple(Icons.Default.Wifi, "Network", "WiFi, Bluetooth, connections", MaterialTheme.colorScheme.error, "network"),
+        Quintuple(Icons.Default.CleaningServices, "Optimizer", "Clean cache, kill background", Color(0xFF66BB6A), "optimize"),
+        Quintuple(Icons.Default.Terminal, "Terminal", "Run shell commands", Color(0xFF78909C), "terminal")
     )
-)
+}
+
+data class Quintuple<A, B, C, D, E>(val first: A, val second: B, val third: C, val fourth: D, val fifth: E)
 
 @Composable
 fun DeviceInfoCard(deviceInfo: String, ramInfo: String, storageInfo: String) {
@@ -201,7 +161,7 @@ fun QuickActionCard(
     icon: ImageVector,
     title: String,
     subtitle: String,
-    color: androidx.compose.ui.graphics.Color,
+    color: Color,
     onClick: () -> Unit
 ) {
     Card(
