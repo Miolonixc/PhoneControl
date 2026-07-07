@@ -74,17 +74,18 @@ fun OptimizeScreen(onBack: () -> Unit) {
             }
 
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(Modifier.weight(1f), onClick = {
-                    scope.launch { addLog("Killed: ${ShellExecutor.execute("am kill-all").success}") }
-                }, shape = RoundedCornerShape(12.dp)) {
+                OutlinedButton(
+                    onClick = { scope.launch { addLog("Killed: ${ShellExecutor.execute("am kill-all").success}") } },
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
                     Icon(Icons.Default.Memory, null, Modifier.size(18.dp)); Spacer(Modifier.width(4.dp)); Text("Kill BG")
                 }
-                OutlinedButton(Modifier.weight(1f), onClick = {
-                    scope.launch {
-                        ShellExecutor.execute("find /data/data -maxdepth 2 -type d -name cache -exec rm -rf {}/* \\; 2>/dev/null")
-                        addLog("Cache cleaned")
-                    }
-                }, shape = RoundedCornerShape(12.dp)) {
+                OutlinedButton(
+                    onClick = { scope.launch { ShellExecutor.execute("find /data/data -maxdepth 2 -type d -name cache -exec rm -rf {}/* \\; 2>/dev/null"); addLog("Cache cleaned") } },
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
                     Icon(Icons.Default.CleaningServices, null, Modifier.size(18.dp)); Spacer(Modifier.width(4.dp)); Text("Clean Cache")
                 }
             }

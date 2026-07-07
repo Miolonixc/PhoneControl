@@ -60,28 +60,28 @@ fun NetworkScreen(onBack: () -> Unit) {
             Text("Controls", fontWeight = FontWeight.Bold)
 
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(Modifier.weight(1f), onClick = { scope.launch { ShellExecutor.execute("cmd wifi set-wifi-enabled enabled"); load() } }, shape = RoundedCornerShape(12.dp)) {
+                Button(onClick = { scope.launch { ShellExecutor.execute("cmd wifi set-wifi-enabled enabled"); load() } }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp)) {
                     Icon(Icons.Default.Wifi, null); Spacer(Modifier.width(4.dp)); Text("WiFi ON")
                 }
-                OutlinedButton(Modifier.weight(1f), onClick = { scope.launch { ShellExecutor.execute("cmd wifi set-wifi-enabled disabled"); load() } }, shape = RoundedCornerShape(12.dp)) {
+                OutlinedButton(onClick = { scope.launch { ShellExecutor.execute("cmd wifi set-wifi-enabled disabled"); load() } }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp)) {
                     Icon(Icons.Default.WifiOff, null); Spacer(Modifier.width(4.dp)); Text("WiFi OFF")
                 }
             }
 
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(Modifier.weight(1f), onClick = { scope.launch { ShellExecutor.execute("cmd bluetooth_manager enable"); load() } }, shape = RoundedCornerShape(12.dp)) {
+                Button(onClick = { scope.launch { ShellExecutor.execute("cmd bluetooth_manager enable"); load() } }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp)) {
                     Icon(Icons.Default.Bluetooth, null); Spacer(Modifier.width(4.dp)); Text("BT ON")
                 }
-                OutlinedButton(Modifier.weight(1f), onClick = { scope.launch { ShellExecutor.execute("cmd bluetooth_manager disable"); load() } }, shape = RoundedCornerShape(12.dp)) {
+                OutlinedButton(onClick = { scope.launch { ShellExecutor.execute("cmd bluetooth_manager disable"); load() } }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp)) {
                     Icon(Icons.Default.BluetoothDisabled, null); Spacer(Modifier.width(4.dp)); Text("BT OFF")
                 }
             }
 
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(Modifier.weight(1f), onClick = { scope.launch { ShellExecutor.execute("cmd connectivity airplane-mode enable"); load() } }, shape = RoundedCornerShape(12.dp)) {
+                Button(onClick = { scope.launch { ShellExecutor.execute("cmd connectivity airplane-mode enable"); load() } }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp)) {
                     Icon(Icons.Default.AirplanemodeActive, null); Spacer(Modifier.width(4.dp)); Text("Airplane ON")
                 }
-                OutlinedButton(Modifier.weight(1f), onClick = { scope.launch { ShellExecutor.execute("cmd connectivity airplane-mode disable"); load() } }, shape = RoundedCornerShape(12.dp)) {
+                OutlinedButton(onClick = { scope.launch { ShellExecutor.execute("cmd connectivity airplane-mode disable"); load() } }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp)) {
                     Icon(Icons.Default.AirplanemodeInactive, null); Spacer(Modifier.width(4.dp)); Text("Airplane OFF")
                 }
             }
