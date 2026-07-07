@@ -1,13 +1,16 @@
 package com.phonecontrol.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -19,36 +22,38 @@ import kotlinx.coroutines.launch
 @Composable
 fun SystemInfoScreen(onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
-    var props by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
+    var info by remember { mutableStateOf(listOf<Pair<String, String>>()) }
+    var loading by remember { mutableStateOf(true) }
 
     LaunchedEffect(Unit) {
         scope.launch {
-            val commands = listOf(
-                "getprop ro.product.model" to "Model",
-                "getprop ro.product.brand" to "Brand",
-                "getprop ro.product.device" to "Device",
-                "getprop ro.board.platform" to "SoC",
-                "getprop ro.build.version.release" to "Android",
-                "getprop ro.build.version.sdk" to "SDK",
-                "getprop ro.build.display.id" to "Build",
-                "getprop ro.build.type" to "Build Type",
-                "getprop ro.serialno" to "Serial",
-                "getprop persist.sys.timezone" to "Timezone",
-                "getprop persist.sys.locale" to "Locale",
-                "cat /proc/version" to "Kernel",
-                "cat /proc/cpuinfo | grep 'model name' | head -1" to "CPU",
-                "df -h /data | tail -1 | awk '{print \$2, \$3, \$4, \$5}'" to "Storage",
-                "cat /proc/meminfo | head -1" to "Total RAM"
+            val cmds = listOf(
+                "Model" to "getprop ro.product.model",
+                "Brand" to "getprop ro.product.brand",
+                "Device" to "getprop ro.product.device",
+                "SoC Platform" to "getprop ro.board.platform",
+                "CPU" to "getprop ro.hardware",
+                "Android Version" to "getprop ro.build.version.release",
+                "SDK Level" to "getprop ro.build.version.sdk",
+                "Build ID" to "getprop ro.build.display.id",
+                "Build Type" to "getprop ro.build.type",
+                "Serial" to "getprop ro.serialno",
+                "Timezone" to "getprop persist.sys.timezone",
+                "Locale" to "getprop persist.sys.locale",
+                "Kernel" to "uname -r",
+                "Screen" to "cmd display get-displays 2>/dev/null | grep -oE 'real [0-9]+ x [0-9]+' | head -1",
+                "Total RAM" to "awk '/MemTotal/{printf \"%.1f GB\", \$2/1048576}' /proc/meminfo",
+                "Available RAM" to "awk '/MemAvailable/{printf \"%.1f GB\", \$2/1048576}' /proc/meminfo",
+                "Storage" to "df -h /data | tail -1 | awk '{printf \"%s used / %s total (%s avail)\", \$3, \$2, \$4}'",
+                "Uptime" to "awk '{d=int(\$1/86400); h=int(\$1%86400/3600); m=int(\$1%3600/60); printf \"%dd %dh %dm\",d,h,m}' /proc/uptime 2>/dev/null",
+                "Encryption" to "getprop ro.crypto.state",
+                "SELinux" to "getenforce 2>/dev/null || echo N/A",
             )
-
-            val results = commands.map { (cmd, label) ->
-                val result = ShellExecutor.execute(cmd)
-                label to if (result.success) result.output.trim() else "N/A"
+            info = cmds.map { (label, cmd) ->
+                val r = ShellExecutor.execute(cmd)
+                label to if (r.success && r.output.isNotBlank()) r.output.trim() else "N/A"
             }
-
-            props = results
-            isLoading = false
+            loading = false
         }
     }
 
@@ -56,48 +61,32 @@ fun SystemInfoScreen(onBack: () -> Unit) {
         topBar = {
             TopAppBar(
                 title = { Text("System Info") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                }
+                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, null) } },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
         }
     ) { padding ->
-        if (isLoading) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentAlignment = androidx.compose.ui.Alignment.Center
-            ) {
+        if (loading) {
+            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = androidx.compose.ui.Alignment.Center) {
                 CircularProgressIndicator()
             }
         } else {
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(16.dp),
+                modifier = Modifier.fillMaxSize().padding(padding),
+                contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(props) { (label, value) ->
-                    Card(
-                        modifier = Modifier.fillMaxWidth()
+                items(info.size) { idx ->
+                    val (label, value) = info[idx]
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                            .padding(horizontal = 16.dp, vertical = 12.dp)
                     ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
-                            Text(
-                                label,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            Text(
-                                value,
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontFamily = FontFamily.Monospace,
-                                fontSize = 13.sp
-                            )
-                        }
+                        Text(label, modifier = Modifier.weight(1f), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(value, fontSize = 14.sp, fontWeight = FontWeight.Medium, fontFamily = FontFamily.Monospace)
                     }
                 }
             }

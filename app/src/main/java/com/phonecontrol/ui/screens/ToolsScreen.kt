@@ -1,15 +1,22 @@
 package com.phonecontrol.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.phonecontrol.util.ShellExecutor
 import kotlinx.coroutines.launch
 
@@ -17,148 +24,93 @@ import kotlinx.coroutines.launch
 @Composable
 fun ToolsScreen(onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
-    var lastResult by remember { mutableStateOf("") }
+    var output by remember { mutableStateOf("Ready") }
 
-    fun runCommand(cmd: String) {
+    fun run(cmd: String) {
         scope.launch {
-            val result = ShellExecutor.execute(cmd)
-            lastResult = if (result.success) result.output else result.error
+            output = "Running..."
+            val r = ShellExecutor.execute(cmd)
+            output = if (r.success) r.output.ifBlank { "Done" } else r.error.ifBlank { "Error" }
         }
     }
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Tools") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                }
-            )
+            TopAppBar(title = { Text("Tools") }, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, null) } })
         }
     ) { padding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp),
+        Column(
+            Modifier.fillMaxSize().padding(padding).padding(16.dp).verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            item {
-                Text(
-                    "Screenshot",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
+            Section("Screenshot")
+            ActionRow("Take Screenshot", Icons.Default.CameraAlt) {
+                run("screencap -p /sdcard/Download/screenshot_\$(date +%Y%m%d_%H%M%S).png")
             }
 
-            item {
-                Button(
-                    onClick = {
-                        runCommand("screencap -p /sdcard/Download/screenshot_\$(date +%Y%m%d_%H%M%S).png")
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(Icons.Default.CameraAlt, null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Take Screenshot")
-                }
+            Section("Screen")
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ActionBtn(Modifier.weight(1f), "Screen Off", Icons.Default.BrightnessLow) { run("input keyevent 26") }
+                ActionBtn(Modifier.weight(1f), "Screen On", Icons.Default.BrightnessHigh) { run("input keyevent 224") }
             }
 
-            item {
-                HorizontalDivider()
-                Text(
-                    "Display",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
+            Section("Navigation Keys")
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ActionBtn(Modifier.weight(1f), "Home", Icons.Default.Home) { run("input keyevent 3") }
+                ActionBtn(Modifier.weight(1f), "Back", Icons.Default.ArrowBack) { run("input keyevent 4") }
+                ActionBtn(Modifier.weight(1f), "Recent", Icons.Default.GridView) { run("input keyevent 187") }
             }
 
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    OutlinedButton(
-                        onClick = { runCommand("cmd input keyevent 26") },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(Icons.Default.ScreenLockPortrait, null)
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Screen Off")
-                    }
-                    OutlinedButton(
-                        onClick = { runCommand("cmd input keyevent 224") },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(Icons.Default.ScreenLockLandscape, null)
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Screen On")
-                    }
-                }
+            Section("Volume")
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ActionBtn(Modifier.weight(1f), "Vol +", Icons.Default.VolumeUp) { run("input keyevent 24") }
+                ActionBtn(Modifier.weight(1f), "Vol -", Icons.Default.VolumeDown) { run("input keyevent 25") }
+                ActionBtn(Modifier.weight(1f), "Mute", Icons.Default.VolumeOff) { run("input keyevent 164") }
             }
 
-            item {
-                HorizontalDivider()
-                Text(
-                    "Input Simulation",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
+            Section("Display")
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ActionBtn(Modifier.weight(1f), "Bright Max", Icons.Default.BrightnessHigh) { run("cmd display set-brightness 0 1.0") }
+                ActionBtn(Modifier.weight(1f), "Bright 50%", Icons.Default.BrightnessMedium) { run("cmd display set-brightness 0 0.5") }
+                ActionBtn(Modifier.weight(1f), "Bright Min", Icons.Default.BrightnessLow) { run("cmd display set-brightness 0 0.1") }
             }
 
-            item {
-                Text(
-                    "Note: Input requires INJECT_EVENTS permission or accessibility service",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error
-                )
+            Section("Auto Rotate")
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ActionBtn(Modifier.weight(1f), "Enable", Icons.Default.ScreenRotation) { run("settings put system accelerometer_rotation 1") }
+                ActionBtn(Modifier.weight(1f), "Disable", Icons.Default.ScreenLockRotation) { run("settings put system accelerometer_rotation 0") }
             }
 
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    AssistChip(
-                        onClick = { runCommand("cmd input keyevent 3") },
-                        label = { Text("Home") }
-                    )
-                    AssistChip(
-                        onClick = { runCommand("cmd input keyevent 4") },
-                        label = { Text("Back") }
-                    )
-                    AssistChip(
-                        onClick = { runCommand("cmd input keyevent 26") },
-                        label = { Text("Power") }
-                    )
-                }
-            }
-
-            item {
-                HorizontalDivider()
-                Text(
-                    "Output",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
-                ) {
-                    Text(
-                        text = lastResult.ifBlank { "No output yet" },
-                        modifier = Modifier.padding(12.dp),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
+            Section("Output")
+            Card(
+                Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                Text(output, modifier = Modifier.padding(12.dp), fontSize = 12.sp, lineHeight = 16.sp)
             }
         }
+    }
+}
+
+@Composable
+private fun Section(title: String) {
+    Text(title, fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.padding(top = 4.dp))
+}
+
+@Composable
+private fun ActionRow(label: String, icon: ImageVector, onClick: () -> Unit) {
+    Button(onClick = onClick, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
+        Icon(icon, null, modifier = Modifier.size(20.dp))
+        Spacer(Modifier.width(8.dp))
+        Text(label)
+    }
+}
+
+@Composable
+private fun ActionBtn(modifier: Modifier, label: String, icon: ImageVector, onClick: () -> Unit) {
+    OutlinedButton(onClick = onClick, modifier = modifier, shape = RoundedCornerShape(12.dp)) {
+        Icon(icon, null, modifier = Modifier.size(16.dp))
+        Spacer(Modifier.width(4.dp))
+        Text(label, fontSize = 12.sp)
     }
 }

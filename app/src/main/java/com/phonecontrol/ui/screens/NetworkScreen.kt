@@ -1,15 +1,20 @@
 package com.phonecontrol.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.phonecontrol.util.ShellExecutor
 import kotlinx.coroutines.launch
 
@@ -17,145 +22,67 @@ import kotlinx.coroutines.launch
 @Composable
 fun NetworkScreen(onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
-    var networkInfo by remember { mutableStateOf("Loading...") }
-    var isLoading by remember { mutableStateOf(true) }
+    var info by remember { mutableStateOf("Loading...") }
 
-    LaunchedEffect(Unit) {
+    fun load() {
         scope.launch {
             val sb = StringBuilder()
-
-            // WiFi
-            val wifiInterface = ShellExecutor.execute("getprop wifi.interface")
-            sb.appendLine("WiFi Interface: ${wifiInterface.output.ifBlank { "N/A" }}")
-
-            val wifiState = ShellExecutor.execute("getprop wifi.supplicant.state")
-            sb.appendLine("WiFi State: ${wifiState.output.ifBlank { "N/A" }}")
-
-            // DNS
+            val wifi = ShellExecutor.execute("getprop wifi.interface")
+            sb.appendLine("WiFi Interface: ${wifi.output.ifBlank { "N/A" }}")
+            val state = ShellExecutor.execute("getprop wifi.supplicant.state")
+            sb.appendLine("WiFi State: ${state.output.ifBlank { "N/A" }}")
             val dns1 = ShellExecutor.execute("getprop net.dns1")
             val dns2 = ShellExecutor.execute("getprop net.dns2")
-            sb.appendLine("\nDNS:")
-            sb.appendLine("  ${dns1.output.ifBlank { "N/A" }}")
-            sb.appendLine("  ${dns2.output.ifBlank { "N/A" }}")
-
-            // Connections
-            val conns = ShellExecutor.execute("ss -tunp 2>/dev/null | head -10 || netstat -tunp 2>/dev/null | head -10")
-            if (conns.output.isNotBlank()) {
-                sb.appendLine("\nConnections:")
-                sb.appendLine(conns.output)
-            }
-
-            networkInfo = sb.toString()
-            isLoading = false
+            sb.appendLine("DNS: ${dns1.output.ifBlank { "N/A" }} ${dns2.output.ifBlank { "" }}")
+            val mobile = ShellExecutor.execute("getprop gsm.network.type")
+            sb.appendLine("Mobile: ${mobile.output.ifBlank { "N/A" }}")
+            val operator = ShellExecutor.execute("getprop gsm.operator.alpha")
+            sb.appendLine("Operator: ${operator.output.ifBlank { "N/A" }}")
+            info = sb.toString()
         }
     }
 
+    LaunchedEffect(Unit) { load() }
+
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Network") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                }
-            )
+            TopAppBar(title = { Text("Network") }, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, null) } })
         }
     ) { padding ->
-        if (isLoading) {
-            Box(
-                modifier = Modifier.fillMaxSize().padding(padding),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
+        Column(
+            Modifier.fillMaxSize().padding(padding).padding(16.dp).verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
+                Text(info, modifier = Modifier.padding(16.dp), fontSize = 13.sp, lineHeight = 20.sp)
             }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                item {
-                    Card(modifier = Modifier.fillMaxWidth()) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(
-                                "Network Info",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                networkInfo,
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        }
-                    }
-                }
 
-                item {
-                    Text(
-                        "Controls",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+            Text("Controls", fontWeight = FontWeight.Bold)
 
-                item {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Button(
-                            onClick = {
-                                scope.launch { ShellExecutor.execute("cmd wifi set-wifi-enabled enabled") }
-                            },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(Icons.Default.Wifi, null)
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("WiFi ON")
-                        }
-                        OutlinedButton(
-                            onClick = {
-                                scope.launch { ShellExecutor.execute("cmd wifi set-wifi-enabled disabled") }
-                            },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(Icons.Default.WifiOff, null)
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("WiFi OFF")
-                        }
-                    }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(Modifier.weight(1f), onClick = { scope.launch { ShellExecutor.execute("cmd wifi set-wifi-enabled enabled"); load() } }, shape = RoundedCornerShape(12.dp)) {
+                    Icon(Icons.Default.Wifi, null); Spacer(Modifier.width(4.dp)); Text("WiFi ON")
                 }
+                OutlinedButton(Modifier.weight(1f), onClick = { scope.launch { ShellExecutor.execute("cmd wifi set-wifi-enabled disabled"); load() } }, shape = RoundedCornerShape(12.dp)) {
+                    Icon(Icons.Default.WifiOff, null); Spacer(Modifier.width(4.dp)); Text("WiFi OFF")
+                }
+            }
 
-                item {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Button(
-                            onClick = {
-                                scope.launch { ShellExecutor.execute("cmd bluetooth_manager enable") }
-                            },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(Icons.Default.Bluetooth, null)
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("BT ON")
-                        }
-                        OutlinedButton(
-                            onClick = {
-                                scope.launch { ShellExecutor.execute("cmd bluetooth_manager disable") }
-                            },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(Icons.Default.BluetoothDisabled, null)
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("BT OFF")
-                        }
-                    }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(Modifier.weight(1f), onClick = { scope.launch { ShellExecutor.execute("cmd bluetooth_manager enable"); load() } }, shape = RoundedCornerShape(12.dp)) {
+                    Icon(Icons.Default.Bluetooth, null); Spacer(Modifier.width(4.dp)); Text("BT ON")
+                }
+                OutlinedButton(Modifier.weight(1f), onClick = { scope.launch { ShellExecutor.execute("cmd bluetooth_manager disable"); load() } }, shape = RoundedCornerShape(12.dp)) {
+                    Icon(Icons.Default.BluetoothDisabled, null); Spacer(Modifier.width(4.dp)); Text("BT OFF")
+                }
+            }
+
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(Modifier.weight(1f), onClick = { scope.launch { ShellExecutor.execute("cmd connectivity airplane-mode enable"); load() } }, shape = RoundedCornerShape(12.dp)) {
+                    Icon(Icons.Default.AirplanemodeActive, null); Spacer(Modifier.width(4.dp)); Text("Airplane ON")
+                }
+                OutlinedButton(Modifier.weight(1f), onClick = { scope.launch { ShellExecutor.execute("cmd connectivity airplane-mode disable"); load() } }, shape = RoundedCornerShape(12.dp)) {
+                    Icon(Icons.Default.AirplanemodeInactive, null); Spacer(Modifier.width(4.dp)); Text("Airplane OFF")
                 }
             }
         }
