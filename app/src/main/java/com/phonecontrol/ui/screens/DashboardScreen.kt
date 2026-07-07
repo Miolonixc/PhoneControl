@@ -41,7 +41,7 @@ fun DashboardScreen(
             val modelResult = ShellExecutor.execute("getprop ro.product.model")
             val androidResult = ShellExecutor.execute("getprop ro.build.version.release")
             deviceInfo = if (modelResult.success && androidResult.success) {
-                "${modelResult.output} • Android ${androidResult.output}"
+                "${modelResult.output} \u2022 Android ${androidResult.output}"
             } else "N/A"
         }
     }
@@ -77,54 +77,38 @@ fun DashboardScreen(
                 )
             }
 
-            items(getQuickActionsList()) { action ->
-                QuickActionCard(
-                    icon = action.first,
-                    title = action.second,
-                    subtitle = action.third,
-                    color = action.fourth,
-                    onClick = { onNavigate(action.fifth) }
-                )
+            item {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    QuickActionCard(Modifier.weight(1f), Icons.Default.PhoneAndroid, "System Info", MaterialTheme.colorScheme.primary) { onNavigate("system") }
+                    QuickActionCard(Modifier.weight(1f), Icons.Default.Apps, "Apps", MaterialTheme.colorScheme.secondary) { onNavigate("apps") }
+                }
+            }
+            item {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    QuickActionCard(Modifier.weight(1f), Icons.Default.Build, "Tools", MaterialTheme.colorScheme.tertiary) { onNavigate("tools") }
+                    QuickActionCard(Modifier.weight(1f), Icons.Default.Wifi, "Network", MaterialTheme.colorScheme.error) { onNavigate("network") }
+                }
+            }
+            item {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    QuickActionCard(Modifier.weight(1f), Icons.Default.CleaningServices, "Optimizer", Color(0xFF66BB6A)) { onNavigate("optimize") }
+                    QuickActionCard(Modifier.weight(1f), Icons.Default.Terminal, "Terminal", Color(0xFF78909C)) { onNavigate("terminal") }
+                }
             }
         }
     }
 }
 
 @Composable
-private fun getQuickActionsList(): List<Quintuple<ImageVector, String, String, Color, String>> {
-    return listOf(
-        Quintuple(Icons.Default.PhoneAndroid, "System Info", "Device details, battery, uptime", MaterialTheme.colorScheme.primary, "system"),
-        Quintuple(Icons.Default.Apps, "Apps Manager", "Installed apps, uninstall, info", MaterialTheme.colorScheme.secondary, "apps"),
-        Quintuple(Icons.Default.Build, "Tools", "Screenshot, input, display", MaterialTheme.colorScheme.tertiary, "tools"),
-        Quintuple(Icons.Default.Wifi, "Network", "WiFi, Bluetooth, connections", MaterialTheme.colorScheme.error, "network"),
-        Quintuple(Icons.Default.CleaningServices, "Optimizer", "Clean cache, kill background", Color(0xFF66BB6A), "optimize"),
-        Quintuple(Icons.Default.Terminal, "Terminal", "Run shell commands", Color(0xFF78909C), "terminal")
-    )
-}
-
-data class Quintuple<A, B, C, D, E>(val first: A, val second: B, val third: C, val fourth: D, val fifth: E)
-
-@Composable
-fun DeviceInfoCard(deviceInfo: String, ramInfo: String, storageInfo: String) {
+private fun DeviceInfoCard(deviceInfo: String, ramInfo: String, storageInfo: String) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                "Device",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                deviceInfo,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Medium
-            )
+            Text("Device", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(deviceInfo, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium)
             Spacer(modifier = Modifier.height(8.dp))
-
             Row(modifier = Modifier.fillMaxWidth()) {
                 InfoChip("RAM", ramInfo.split("\n").getOrNull(1)?.trim()?.take(20) ?: "N/A", Modifier.weight(1f))
                 Spacer(modifier = Modifier.width(8.dp))
@@ -135,81 +119,39 @@ fun DeviceInfoCard(deviceInfo: String, ramInfo: String, storageInfo: String) {
 }
 
 @Composable
-fun InfoChip(label: String, value: String, modifier: Modifier = Modifier) {
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(8.dp),
-        color = MaterialTheme.colorScheme.surface
-    ) {
+private fun InfoChip(label: String, value: String, modifier: Modifier = Modifier) {
+    Surface(modifier = modifier, shape = RoundedCornerShape(8.dp), color = MaterialTheme.colorScheme.surface) {
         Column(modifier = Modifier.padding(8.dp)) {
-            Text(
-                label,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                value,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium
-            )
+            Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
         }
     }
 }
 
 @Composable
-fun QuickActionCard(
+private fun QuickActionCard(
+    modifier: Modifier,
     icon: ImageVector,
     title: String,
-    subtitle: String,
     color: Color,
     onClick: () -> Unit
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
+        modifier = modifier.clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
-        Row(
-            modifier = Modifier
-                .padding(16.dp)
-                .animateContentSize(),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier.padding(16.dp).animateContentSize(),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(color.copy(alpha = 0.15f)),
+                modifier = Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)).background(color.copy(alpha = 0.15f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    icon,
-                    contentDescription = title,
-                    tint = color,
-                    modifier = Modifier.size(24.dp)
-                )
+                Icon(icon, contentDescription = title, tint = color, modifier = Modifier.size(24.dp))
             }
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    title,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Medium
-                )
-                Text(
-                    subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            Icon(
-                Icons.Default.ChevronRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
         }
     }
 }
