@@ -18,11 +18,13 @@ import androidx.compose.ui.unit.sp
 import com.phonecontrol.util.ShellExecutor
 import kotlinx.coroutines.launch
 
+data class AppInfo(val pkg: String, val label: String)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppsScreen(onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
-    var apps by remember { mutableStateOf(listOf<String>()) }
+    var apps by remember { mutableStateOf(listOf<AppInfo>()) }
     var loading by remember { mutableStateOf(true) }
     var filter by remember { mutableIntStateOf(0) }
     var search by remember { mutableStateOf("") }
@@ -34,12 +36,25 @@ fun AppsScreen(onBack: () -> Unit) {
         scope.launch {
             val flag = when (filter) { 0 -> "-3"; 1 -> "-s"; 2 -> "-e"; else -> "-3" }
             val result = ShellExecutor.execute("pm list packages $flag | sed 's/package://' | sort")
-            apps = if (result.success) result.output.lines().filter { it.isNotBlank() } else emptyList()
+            val pkgs = if (result.success) result.output.lines().filter { it.isNotBlank() } else emptyList()
+
+            apps = pkgs.map { pkg ->
+                val labelResult = ShellExecutor.execute("dumpsys package $pkg | grep -A1 'label=' | grep 'label=' | sed 's/.*label=//' | head -1")
+                val label = if (labelResult.success && labelResult.output.isNotBlank()) {
+                    labelResult.output.trim().substringBefore("\n").trim()
+                } else {
+                    // Fallback: extract last part of package name
+                    pkg.substringAfterLast(".")
+                        .replaceFirstChar { it.uppercase() }
+                }
+                AppInfo(pkg, label)
+            }
             loading = false
         }
     }
 
-    val filtered = if (search.isBlank()) apps else apps.filter { it.contains(search, ignoreCase = true) }
+    val filtered = if (search.isBlank()) apps
+    else apps.filter { it.pkg.contains(search, ignoreCase = true) || it.label.contains(search, ignoreCase = true) }
 
     Scaffold(
         topBar = {
@@ -54,7 +69,7 @@ fun AppsScreen(onBack: () -> Unit) {
                 value = search,
                 onValueChange = { search = it },
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                placeholder = { Text("Search...") },
+                placeholder = { Text("Search apps...") },
                 leadingIcon = { Icon(Icons.Default.Search, null) },
                 trailingIcon = { if (search.isNotBlank()) IconButton(onClick = { search = "" }) { Icon(Icons.Default.Clear, null) } else null },
                 singleLine = true,
@@ -73,7 +88,7 @@ fun AppsScreen(onBack: () -> Unit) {
             } else {
                 Text("  ${filtered.size} apps", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 4.dp))
                 LazyColumn(contentPadding = PaddingValues(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    items(filtered) { pkg ->
+                    items(filtered) { app ->
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -84,8 +99,11 @@ fun AppsScreen(onBack: () -> Unit) {
                         ) {
                             Icon(Icons.Default.Apps, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                             Spacer(Modifier.width(12.dp))
-                            Text(pkg, modifier = Modifier.weight(1f), fontSize = 13.sp)
-                            IconButton(onClick = { targetPkg = pkg; showConfirm = true }, modifier = Modifier.size(32.dp)) {
+                            Column(Modifier.weight(1f)) {
+                                Text(app.label, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                                Text(app.pkg, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            IconButton(onClick = { targetPkg = app.pkg; showConfirm = true }, modifier = Modifier.size(32.dp)) {
                                 Icon(Icons.Default.DeleteOutline, null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.error)
                             }
                         }
