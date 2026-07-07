@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
@@ -46,6 +47,7 @@ private val cardList = listOf(
     CardData(Icons.Outlined.Terminal, "Terminal", "Shell commands", listOf(Color(0xFF455A64), Color(0xFF78909C)), "terminal")
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(onNavigate: (String) -> Unit) {
     val scope = rememberCoroutineScope()
@@ -176,6 +178,7 @@ private fun DeviceCard(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun StatBox(modifier: Modifier, label: String, value: String, pct: Int) {
     Column(
